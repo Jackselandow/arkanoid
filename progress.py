@@ -1,41 +1,50 @@
-def get_values():
-    progress = open('progress.txt', 'r+')
-    lines = progress.readlines()
-    levels_passed = int
-    names_passed_levels = list
-    for line in lines:
-        index = line.find(':')
-        value = line[index + 1:].strip()
-        if line.startswith('LEVELS_PASSED'):
-            levels_passed = value
-        elif line.startswith('NAMES_PASSED_LEVELS'):
-            if value == '[]':
-                names_passed_levels = []
-            else:
-                names_passed_levels = value
-    return int(levels_passed), names_passed_levels
+import sqlite3
 
 
-def change_values(levels_passed, append_passed_levels):
-    progress = open('progress.txt', 'r+')
-    lines = progress.readlines()
-    from os import remove, rename
-    new_progress = open('new_progress.txt', 'w')
-    old_levels_passed, old_names_passed_levels = get_values()
+def get_value(table, column, condition):
+    connection = sqlite3.connect('progress.db')
+    cursor = connection.cursor()
+    if condition:
+        cursor.execute(f"""
+        SELECT "{column}" FROM "{table}" WHERE {condition}
+        """)
+    else:
+        cursor.execute(f"""
+        SELECT "{column}" FROM "{table}"
+        """)
+    value = cursor.fetchall()
+    connection.close()
+    return value[0][0]
 
-    for line in lines:
-        if line.startswith('LEVELS_PASSED') and levels_passed != 'none':
-            line = line.replace(str(old_levels_passed), str(levels_passed))
-            print(line)
-        elif line.startswith('NAMES_PASSED_LEVELS') and append_passed_levels != ['none']:
-            index = line.find(':')
-            value = line[index + 2]
-            if value != ']':
-                line = line.replace(']', f', {append_passed_levels}]')
-            else:
-                line = line.replace(']', f'{append_passed_levels}]')
-            print(line)
-        new_progress.write(line)
 
-    remove('progress.txt')
-    rename('new_progress.txt', 'progress.txt')
+def update_value(table, column, condition, new_value):
+    connection = sqlite3.connect('progress.db')
+    if condition:
+        connection.execute(f"""
+            UPDATE "{table}" SET "{column}"={new_value} WHERE {condition}
+            """)
+    else:
+        connection.execute(f"""
+            UPDATE "{table}" SET "{column}"={new_value}
+            """)
+    connection.commit()
+    connection.close()
+
+
+def update_game_progress(passed_level):
+    import basics
+    if passed_level not in basics.PASSED_LEVELS:
+        if basics.PASSED_LEVELS != '':
+            updated_value = f'"{basics.PASSED_LEVELS},{passed_level}"'
+            update_value('Level Progress', 'passed_levels', None, updated_value)
+        else:
+            update_value('Level Progress', 'passed_levels', None, f'"{passed_level}"')
+        basics.PASSED_LEVELS = get_value('Level Progress', 'passed_levels', None)
+        basics.PASSED_LEVELS_LIST = basics.PASSED_LEVELS.split(',')
+        if len(basics.BALL_SHAPES) != len(basics.AVAILABLE_SHAPES.split(',')):
+            updated_value = f'"{basics.AVAILABLE_SHAPES},{basics.BALL_SHAPES[len(basics.AVAILABLE_SHAPES.split(","))]}"'
+            update_value('Ball Shapes', 'available', None, updated_value)
+            basics.AVAILABLE_SHAPES = get_value('Ball Shapes', 'available', None)
+            return True
+    else:
+        return False
