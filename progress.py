@@ -1,3 +1,4 @@
+import basics
 import sqlite3
 
 
@@ -32,7 +33,6 @@ def update_value(table, column, condition, new_value):
 
 
 def update_game_progress(passed_level):
-    import basics
     if passed_level not in basics.PASSED_LEVELS:
         if basics.PASSED_LEVELS != '':
             updated_value = f'"{basics.PASSED_LEVELS},{passed_level}"'
