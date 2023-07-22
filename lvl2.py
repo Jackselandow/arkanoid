@@ -7,9 +7,9 @@ pygame.init()
 
 def run_lvl():
     basics.LVL2_MUSIC.update()
-    level2_label = Label('l e v e l 2', 100 * basics.FONT_COEFFICIENT, 'fonts/retroblaze_font.ttf', basics.GREEN, center=(basics.WIN_RECT.right / 2, basics.LEVEL.upper_menu.bottom / 2))
+    level2_label = Label('l e v e l 2', 100 * basics.FONT_COEFFICIENT, 'fonts/retroblaze_font.ttf', 'green', center=(basics.WIN_RECT.right / 2, basics.LEVEL.upper_menu.bottom / 2))
     while True:
-        bricks_left_label = Label('BRICKS LEFT: ' + str(len(basics.LEVEL.bricks_group) - 10), 60 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.WHITE, bottomright=(basics.WIN_RECT.right - 8 * basics.X_COEFFICIENT, basics.LEVEL.upper_menu.bottom - 8 * basics.Y_COEFFICIENT))
+        bricks_left_label = Label('BRICKS LEFT: ' + str(len(basics.LEVEL.bricks_group) - 10), 60 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'white', bottomright=(basics.WIN_RECT.right - 8 * basics.X_COEFFICIENT, basics.LEVEL.upper_menu.bottom - 8 * basics.Y_COEFFICIENT))
         basics.CLOCK.tick(basics.FPS)
         if len(basics.LEVEL.bricks_group) - 10 == 0:
             basics.LVL2_MUSIC.stop()
@@ -19,7 +19,7 @@ def run_lvl():
             run_lose()
 
         basics.LEVEL.bg.show()
-        basics.WIN.fill(basics.BLACK, basics.LEVEL.upper_menu)
+        basics.WIN.fill('black', basics.LEVEL.upper_menu)
         level2_label.show()
         bricks_left_label.show()
         basics.LEVEL.platform_group.draw(basics.WIN)

@@ -84,7 +84,7 @@ class Label:
         self.font = pygame.font.Font(font, int(font_size))
         self.text = self.font.render(text, antialias, fg)
         finished_fonts = ['fonts/pixeboy_font.ttf', 'fonts/connection_font.ttf', 'fonts/retroblaze_font.ttf']
-        self.surf = pygame.Surface(self.text.get_size())
+        self.surf = pygame.Surface(self.text.get_size()).convert()
         self.bg = bg
         if bg:
             self.surf.fill(bg)
@@ -104,7 +104,7 @@ class Label:
 class Image:
 
     def __init__(self, file_name, size, **pos):
-        self.image = pygame.transform.scale(pygame.image.load(file_name), size)
+        self.image = pygame.transform.scale(pygame.image.load(file_name), size).convert_alpha()
         self.rect = self.image.get_rect(**pos)
 
     def show(self):
@@ -119,13 +119,13 @@ class Button:
         elif image:
             self.content = image
         if selection == 'glow':
-            selection_surf = pygame.Surface((self.content.rect.size[0] + 16 * basics.X_COEFFICIENT, self.content.rect.size[1] + 16 * basics.Y_COEFFICIENT))
-            selection_surf.fill(basics.WHITE)
+            selection_surf = pygame.Surface((self.content.rect.size[0] + 16 * basics.X_COEFFICIENT, self.content.rect.size[1] + 16 * basics.Y_COEFFICIENT)).convert()
+            selection_surf.fill('white')
             selection_surf.set_alpha(120)
             self.selection_surfs = {selection_surf: selection_surf.get_rect(center=self.content.rect.center)}
         elif selection == 'arrows':
-            left_arrow = pygame.transform.scale(pygame.image.load(f'objects/selection_arrows/{arrows_color}_left.png'), (self.content.rect.size[1] / 3.6, self.content.rect.size[1] / 2))
-            right_arrow = pygame.transform.scale(pygame.image.load(f'objects/selection_arrows/{arrows_color}_right.png'), (self.content.rect.size[1] / 3.6, self.content.rect.size[1] / 2))
+            left_arrow = pygame.transform.scale(pygame.image.load(f'objects/selection_arrows/{arrows_color}_left.png'), (self.content.rect.size[1] / 3.6, self.content.rect.size[1] / 2)).convert_alpha()
+            right_arrow = pygame.transform.scale(pygame.image.load(f'objects/selection_arrows/{arrows_color}_right.png'), (self.content.rect.size[1] / 3.6, self.content.rect.size[1] / 2)).convert_alpha()
             self.selection_surfs = {left_arrow: (self.content.rect.left - 8 * basics.X_COEFFICIENT - left_arrow.get_width(), self.content.rect.centery - left_arrow.get_height() / 2), right_arrow: (self.content.rect.right + 8 * basics.X_COEFFICIENT, self.content.rect.centery - right_arrow.get_height() / 2)}
         self.selection = selection
         self.mouse_cooldown = False
@@ -187,7 +187,7 @@ class LevelControl:
         self.started = False
         self.countdown_state = False
         self.countdown_index = 0
-        self.press_space_label = Button(Label('Press SPACE to start', 50 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', basics.RED, center=(basics.WIN_RECT.right / 2, basics.WIN_RECT.height / 2)), None, clickable=False, key=pygame.K_SPACE)
+        self.press_space_label = Button(Label('Press SPACE to start', 50 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', 'red', center=(basics.WIN_RECT.right / 2, basics.WIN_RECT.height / 2)), None, clickable=False, key=pygame.K_SPACE)
         self.press_space_label.content.text.set_alpha(0)
         self.press_space_state = 'appear'
         self.bg = bg
@@ -243,6 +243,34 @@ class LevelControl:
                     ball.image.set_alpha(ball.alpha)
 
 
+class SurfaceMaker:
+
+    def __init__(self):
+        self.saved_brick_surfs = {}
+        self.saved_platform_surfs = {}
+        self.darker_shade = pygame.Color(40, 40, 40)
+
+    def make_brick_surf(self, size, color):
+        if (color, size) in self.saved_brick_surfs.keys():
+            return self.saved_brick_surfs[(color, size)]
+        else:
+            init_color = pygame.color.Color(color)
+            dark_color = init_color - self.darker_shade
+            darker_color = dark_color - self.darker_shade
+            dark_color.a = 255
+            darker_color.a = 255
+            surf = pygame.Surface(size)
+            surf.set_colorkey((0, 0, 0))
+            surf.fill(darker_color)
+            surf.fill(dark_color, (5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT, size[0] - 10 * basics.X_COEFFICIENT, size[1] - 10 * basics.Y_COEFFICIENT))
+            surf.fill(init_color, (10 * basics.X_COEFFICIENT, 10 * basics.Y_COEFFICIENT, size[0] - 20 * basics.X_COEFFICIENT, size[1] - 20 * basics.Y_COEFFICIENT))
+            self.saved_brick_surfs.update({(color, size): surf})
+            return surf
+
+    def make_platform_surf(self):
+        pass
+
+
 class Border(pygame.sprite.Sprite):
 
     def __init__(self, pos, size):
@@ -265,7 +293,7 @@ class Brick(pygame.sprite.Sprite):
             self.armor = 0
         else:
             self.armor = armor
-        self.image = pygame.Surface(self.size)
+        self.image = pygame.Surface(self.size).convert()
         self.alter_appearance()
         self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
         self.mask = pygame.mask.from_surface(self.image)
@@ -289,21 +317,23 @@ class Brick(pygame.sprite.Sprite):
                         buff.state = 'fall'
 
     def alter_appearance(self):
-        brick_filling = pygame.image.load(f'objects/bricks/{self.color}.png')
-        self.image.fill(basics.BLACK)
-        if self.armor > 0:
-            self.image.blit(pygame.transform.scale(pygame.image.load(f'objects/bricks/gray.png'), (self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT)), (5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT))
-            inner_size = self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT
-            piece_x, piece_y = 5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT
-            piece_size = (inner_size[0] - (5 * basics.X_COEFFICIENT * self.armor)) / (self.armor + 1), (inner_size[1] - (5 * basics.Y_COEFFICIENT * self.armor)) / (self.armor + 1)
-            delta_piece_x, delta_piece_y = piece_size[0] + 5 * basics.X_COEFFICIENT, piece_size[1] + 5 * basics.Y_COEFFICIENT
-            for pos in range((self.armor + 1) ** 2):
-                if pos % (self.armor + 1) == 0 and pos != 0:
-                    piece_x, piece_y = 5 * basics.X_COEFFICIENT, piece_y + delta_piece_y
-                self.image.blit(pygame.transform.scale(brick_filling, piece_size), (piece_x, piece_y))
-                piece_x += delta_piece_x
-        else:
-            self.image.blit(pygame.transform.scale(brick_filling, (self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT)), (5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT))
+        self.image = basics.SURFACEMAKER.make_brick_surf(self.size, self.color)
+
+        # brick_filling = pygame.image.load(f'objects/bricks/{self.color}.png').convert()
+        # self.image.fill('black')
+        # if self.armor > 0:
+        #     self.image.blit(pygame.transform.scale(pygame.image.load(f'objects/bricks/gray.png').convert(), (self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT)), (5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT))
+        #     inner_size = self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT
+        #     piece_x, piece_y = 5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT
+        #     piece_size = (inner_size[0] - (5 * basics.X_COEFFICIENT * self.armor)) / (self.armor + 1), (inner_size[1] - (5 * basics.Y_COEFFICIENT * self.armor)) / (self.armor + 1)
+        #     delta_piece_x, delta_piece_y = piece_size[0] + 5 * basics.X_COEFFICIENT, piece_size[1] + 5 * basics.Y_COEFFICIENT
+        #     for pos in range((self.armor + 1) ** 2):
+        #         if pos % (self.armor + 1) == 0 and pos != 0:
+        #             piece_x, piece_y = 5 * basics.X_COEFFICIENT, piece_y + delta_piece_y
+        #         self.image.blit(pygame.transform.scale(brick_filling, piece_size), (piece_x, piece_y))
+        #         piece_x += delta_piece_x
+        # else:
+        #     self.image.blit(pygame.transform.scale(brick_filling, (self.size[0] - 10 * basics.X_COEFFICIENT, self.size[1] - 10 * basics.Y_COEFFICIENT)), (5 * basics.X_COEFFICIENT, 5 * basics.Y_COEFFICIENT))
 
 
 class Platform(pygame.sprite.Sprite):
@@ -312,7 +342,7 @@ class Platform(pygame.sprite.Sprite):
         super().__init__()
         self.x, self.y = pos
         self.size = size
-        self.image = pygame.transform.scale(pygame.image.load(surf), size)
+        self.image = pygame.transform.scale(pygame.image.load(surf), size).convert_alpha()
         self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
         self.mask = pygame.mask.from_surface(self.image)
         self.vel = vel
@@ -320,15 +350,15 @@ class Platform(pygame.sprite.Sprite):
     def update(self):
         if basics.CONTROL_TYPE == 'keyboard':
             key_pressed = pygame.key.get_pressed()
-            if key_pressed[pygame.K_LEFT] and not self.rect.colliderect(basics.LEFT_BORDER) or key_pressed[pygame.K_a] and not self.rect.colliderect(basics.LEFT_BORDER):
+            if key_pressed[pygame.K_LEFT] and not self.rect.colliderect(basics.LEFT_BORDER.rect) or key_pressed[pygame.K_a] and not self.rect.colliderect(basics.LEFT_BORDER.rect):
                 self.rect.x -= self.vel * basics.X_COEFFICIENT
-            if key_pressed[pygame.K_RIGHT] and not self.rect.colliderect(basics.RIGHT_BORDER) or key_pressed[pygame.K_d] and not self.rect.colliderect(basics.RIGHT_BORDER):
+            if key_pressed[pygame.K_RIGHT] and not self.rect.colliderect(basics.RIGHT_BORDER.rect) or key_pressed[pygame.K_d] and not self.rect.colliderect(basics.RIGHT_BORDER.rect):
                 self.rect.x += self.vel * basics.X_COEFFICIENT
         elif basics.CONTROL_TYPE == 'mouse':
             mouse_pos = pygame.mouse.get_pos()
             left_center = self.rect.centerx - self.rect.left
             right_center = self.rect.right - self.rect.centerx
-            if not self.rect.colliderect(basics.LEFT_BORDER) and not self.rect.colliderect(basics.RIGHT_BORDER):
+            if not self.rect.colliderect(basics.LEFT_BORDER.rect) and not self.rect.colliderect(basics.RIGHT_BORDER.rect):
                 if not -self.vel * basics.X_COEFFICIENT < mouse_pos[0] - self.rect.centerx < self.vel * basics.X_COEFFICIENT:
                     if mouse_pos[0] >= self.rect.centerx:
                         self.rect.centerx += self.vel * basics.X_COEFFICIENT
@@ -357,7 +387,7 @@ class Ball(pygame.sprite.Sprite):
         else:
             self.surf_name = self.shape
         self.anim_speed = anim_speed
-        self.surf_frames = [pygame.transform.scale(pygame.image.load(f'objects/ball_shapes/{self.surf_name}/{index}.png'), self.init_size) for index in range(len(listdir(f'objects/ball_shapes/{self.surf_name}/')) - 1)] # creates a list of frames by for-loop, iteration number of which is defined by the number of files in the directory
+        self.surf_frames = [pygame.transform.scale(pygame.image.load(f'objects/ball_shapes/{self.surf_name}/{index}.png'), self.init_size).convert_alpha() for index in range(len(listdir(f'objects/ball_shapes/{self.surf_name}/')) - 1)] # creates a list of frames by for-loop, iteration number of which is defined by the number of files in the directory
         self.init_surf = self.surf_frames[self.frame_index]
         self.image = self.init_surf.copy() # a copy of the initial surface which will be modified
         self.surf_rot_angle = 0 # an angle of the surface rotation
@@ -501,19 +531,19 @@ class Ball(pygame.sprite.Sprite):
     def detect_brick_side(self, collision_info):
         brick_rect, hitbox, old_hitbox, x_move, y_move = collision_info['brick'].rect, collision_info['hitbox'], collision_info['old_hitbox'], collision_info['x_move'], collision_info['y_move']
         if x_move > 0 and old_hitbox.right <= brick_rect.left <= hitbox.right: # check collision between the right side of the ball and the left side of the brick
-            self.x_move = -abs(self.x_move)
+            self.x_move = -abs(x_move)
             # print(f"brick's left      self.x_move = {self.x_move}")
             self.hitbox.right = brick_rect.left
         elif x_move < 0 and hitbox.left <= brick_rect.right <= old_hitbox.left: # check collision between the left side of the ball and the right side of the brick
-            self.x_move = abs(self.x_move)
+            self.x_move = abs(x_move)
             # print(f"brick's right      self.x_move = {self.x_move}")
             self.hitbox.left = brick_rect.right
         if y_move > 0 and old_hitbox.bottom <= brick_rect.top <= hitbox.bottom: # check collision between the bottom side of the ball and the top side of the brick
-            self.y_move = -abs(self.y_move)
+            self.y_move = -abs(y_move)
             # print(f"brick's top      self.y_move = {self.y_move}")
             self.hitbox.bottom = brick_rect.top
         elif y_move < 0 and hitbox.top <= brick_rect.bottom <= old_hitbox.top: # check collision between the top side of the ball and the bottom side of the brick
-            self.y_move = abs(self.y_move)
+            self.y_move = abs(y_move)
             # print(f"brick's bottom      self.y_move = {self.y_move}")
             self.hitbox.top = brick_rect.bottom
 
@@ -527,7 +557,7 @@ class Shape(pygame.sprite.Sprite):
         self.surf_name = surf_name
         self.frame_index = frame_index
         self.anim_speed = anim_speed
-        self.surf_frames = [pygame.transform.scale(pygame.image.load(f'objects/ball_shapes/{self.surf_name}/{index}.png'), self.size) for index in range(len(listdir(f'objects/ball_shapes/{self.surf_name}/')) - 1)] # creates a list of frames by for-loop, iteration number of which is defined by the number of files in the directory
+        self.surf_frames = [pygame.transform.scale(pygame.image.load(f'objects/ball_shapes/{self.surf_name}/{index}.png'), self.size).convert_alpha() for index in range(len(listdir(f'objects/ball_shapes/{self.surf_name}/')) - 1)] # creates a list of frames by for-loop, iteration number of which is defined by the number of files in the directory
         self.image = self.surf_frames[self.frame_index]
         self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
         if self.surf_name == 'faceless':
@@ -566,7 +596,7 @@ class Buff(pygame.sprite.Sprite):
         self.type = choice(['slow_ball', 'fast_ball', 'slow_platform', 'fast_platform', 'more_balls', 'chaotic_ball', 'x-ray', 'ghost_ball'])
         self.brick_holder = brick_holder
         self.size = 40 * basics.X_COEFFICIENT, 40 * basics.Y_COEFFICIENT
-        self.image = pygame.transform.scale(pygame.image.load(f'objects/buffs/{self.type}.png'), self.size)
+        self.image = pygame.transform.scale(pygame.image.load(f'objects/buffs/{self.type}.png'), self.size).convert_alpha()
         self.rect = self.image.get_rect(center=brick_holder.rect.center)
         self.timer = Timer(7.5, self.cancel_buff)
 
@@ -579,7 +609,7 @@ class Buff(pygame.sprite.Sprite):
                 basics.LEVEL.active_buffs_group.add(self)
                 basics.LEVEL.active_buffs_types.append(self.type)
                 self.apply_buff()
-            elif self.rect.top > basics.BOTTOM_BORDER.bottom:
+            elif self.rect.top > basics.BOTTOM_BORDER.rect.bottom:
                 self.kill()
             else:
                 self.rect.y += 5 * basics.Y_COEFFICIENT

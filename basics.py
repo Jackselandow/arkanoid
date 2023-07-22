@@ -1,6 +1,6 @@
 import pygame
 from main import run_lvl1, run_lvl2, run_lvl3, run_lvl4
-from classes import Border, Music, Sound, Button, LevelControl
+from classes import Border, Music, Sound, Button, LevelControl, SurfaceMaker
 from progress import get_value
 pygame.init()
 
@@ -11,21 +11,9 @@ WIN = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)    # my WIN.size = (144
 # WIN = pygame.Surface((1440, 900))
 # SCREEN = pygame.display.set_mode((800, 500), pygame.RESIZABLE)
 # SCREEN_SIZE = SCREEN.get_size()
-ARKANOID_ICON = pygame.image.load('objects/bricks.png')
+ARKANOID_ICON = pygame.image.load('objects/bricks.png').convert()
 pygame.display.set_caption('ARKANOID', 'Arkanoid')
 pygame.display.set_icon(ARKANOID_ICON)
-
-# colors
-WHITE = 255, 255, 255
-BLACK = 0, 0, 0
-GRAY = 125, 125, 125
-GREEN = 0, 255, 0
-RED = 255, 0, 0
-BLUE = 0, 0, 255
-DARK_GREEN = 38, 133, 38
-PURPLE = 255, 0, 255
-YELLOW = 255, 255, 0
-ORANGE = 255, 160, 0
 
 # basics
 WIN_RECT = WIN.get_rect()
@@ -35,6 +23,7 @@ CLOCK = pygame.time.Clock()
 FPS = 60
 LAST_RUN = None
 PRELAST_RUN = None
+SURFACEMAKER = SurfaceMaker()
 
 # LEFT_BORDER = pygame.Rect(-1, 0, 1, WIN_RECT.bottom)
 # RIGHT_BORDER = pygame.Rect(WIN_RECT.right, 0, 1, WIN_RECT.bottom)
@@ -46,9 +35,9 @@ RIGHT_BORDER = Border((WIN_RECT.right, 115 * Y_COEFFICIENT), (1, WIN_RECT.height
 TOP_BORDER = Border((0, 115 * Y_COEFFICIENT), (WIN_RECT.width, 1))
 BOTTOM_BORDER = Border(WIN_RECT.bottomleft, (WIN_RECT.width, 1))
 
-BLACK_SCREEN = pygame.Surface((WIN_RECT.width, WIN_RECT.height))
+BLACK_SCREEN = pygame.Surface((WIN_RECT.width, WIN_RECT.height)).convert()
 BLACK_SCREEN.fill((0, 0, 0))
-WHITE_SCREEN = pygame.Surface((WIN_RECT.width, WIN_RECT.height))
+WHITE_SCREEN = pygame.Surface((WIN_RECT.width, WIN_RECT.height)).convert()
 WHITE_SCREEN.fill((255, 255, 255))
 
 PREVOLUME = VOLUME = get_value('Volume', 'general', None)

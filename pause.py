@@ -13,12 +13,12 @@ def pause():
     basics.WIN.blit(transparent_bg, (0, 0))
 
     pause_bg = Image('backgrounds/pause_bg.png', (810 * basics.X_COEFFICIENT, 562.5 * basics.Y_COEFFICIENT), center=(basics.WIN_RECT.right / 2, basics.WIN_RECT.bottom / 2))
-    pause_label = Label('GAME PAUSED', 100 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.WHITE, center=(basics.WIN_RECT.right / 2, 330 * basics.Y_COEFFICIENT))
+    pause_label = Label('GAME PAUSED', 100 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'white', center=(basics.WIN_RECT.right / 2, 330 * basics.Y_COEFFICIENT))
     restart_button = Button(None, Image('objects/restart_button.png', (162 * basics.X_COEFFICIENT, 180 * basics.Y_COEFFICIENT), topleft=(440 * basics.X_COEFFICIENT, 420 * basics.Y_COEFFICIENT)), feedbacks=[pygame.mixer.stop, basics.PRELAST_RUN])
     main_menu_button = Button(None, Image('objects/main_menu_button.png', (162 * basics.X_COEFFICIENT, 180 * basics.Y_COEFFICIENT), topleft=(639 * basics.X_COEFFICIENT, 420 * basics.Y_COEFFICIENT)), key=pygame.K_ESCAPE)
     full_volume_button = Button(None, Image('objects/full_volume_button.png', (162 * basics.X_COEFFICIENT, 180 * basics.Y_COEFFICIENT), topleft=(838 * basics.X_COEFFICIENT, 420 * basics.Y_COEFFICIENT)))
     no_volume_button = Button(None, Image('objects/no_volume_button.png', (162 * basics.X_COEFFICIENT, 180 * basics.Y_COEFFICIENT), topleft=(838 * basics.X_COEFFICIENT, 420 * basics.Y_COEFFICIENT)))
-    resume_button = Button(Label('RESUME', 130 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.GREEN, center=(basics.WIN_RECT.right / 2, 670 * basics.Y_COEFFICIENT)), None, key=pygame.K_SPACE)
+    resume_button = Button(Label('RESUME', 130 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'green', center=(basics.WIN_RECT.right / 2, 670 * basics.Y_COEFFICIENT)), None, key=pygame.K_SPACE)
     while True:
         basics.CLOCK.tick(basics.FPS)
         pause_bg.show()
@@ -58,10 +58,10 @@ def pause():
 
 
 def countdown():
-    three = pygame.transform.scale(pygame.image.load('objects/countdown/three.png'), (160 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT))
-    two = pygame.transform.scale(pygame.image.load('objects/countdown/two.png'), (160 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT))
-    one = pygame.transform.scale(pygame.image.load('objects/countdown/one.png'), (76 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT))
-    go = pygame.transform.scale(pygame.image.load('objects/countdown/go.png'), (451 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT))
+    three = pygame.transform.scale(pygame.image.load('objects/countdown/three.png'), (160 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT)).convert_alpha()
+    two = pygame.transform.scale(pygame.image.load('objects/countdown/two.png'), (160 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT)).convert_alpha()
+    one = pygame.transform.scale(pygame.image.load('objects/countdown/one.png'), (76 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT)).convert_alpha()
+    go = pygame.transform.scale(pygame.image.load('objects/countdown/go.png'), (451 * basics.X_COEFFICIENT, 200 * basics.Y_COEFFICIENT)).convert_alpha()
     countdown_list = [three, two, one, go]
 
     basics.LEVEL.countdown_state = 'process'

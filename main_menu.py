@@ -34,12 +34,12 @@ def main_menu(alpha):
     basics.MENU_MUSIC.play(loops=-1)
     menu_bg = Image('backgrounds/menu_bg.jpeg', (basics.WIN_RECT.right, basics.WIN_RECT.bottom), topleft=(0, 0))
     arkanoid_logo = Image('objects/arkanoid_logo.png', (1400 * basics.X_COEFFICIENT, 300 * basics.Y_COEFFICIENT), topleft=(20 * basics.X_COEFFICIENT, 50 * basics.Y_COEFFICIENT))
-    author_label = Label('Jackselandow Edition', 50 * basics.FONT_COEFFICIENT, 'fonts/tales_font.ttf', basics.WHITE, topleft=(0, 5 * basics.Y_COEFFICIENT))
-    play_button = Button(Label('PLAY', 300 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.WHITE, basics.RED, topleft=(440 * basics.X_COEFFICIENT, 370 * basics.Y_COEFFICIENT)), None, 'arrows', 'white')
-    settings_button = Button(Label('SETTINGS', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', basics.WHITE, basics.GREEN, topleft=(560 * basics.X_COEFFICIENT, 570 * basics.Y_COEFFICIENT)), None, 'arrows', 'white', feedbacks=[basics.CLICK_SOUND1.play, basics.MENU_MUSIC.stop, run_settings])
-    levels_button = Button(Label('LEVELS', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', basics.WHITE, basics.BLUE, topleft=(600 * basics.X_COEFFICIENT, 660 * basics.Y_COEFFICIENT)), None, 'arrows', 'white', feedbacks=[basics.CLICK_SOUND1.play, basics.MENU_MUSIC.stop, run_levels_menu])
-    exit_button = Button(Label('EXIT', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', basics.WHITE, basics.GRAY, topleft=(640 * basics.X_COEFFICIENT, 750 * basics.Y_COEFFICIENT)), None, 'arrows', 'black', feedbacks=[basics.CLICK_SOUND1.play, exit_confirmation])
-    version_label = Label('Version 4.0', 50 * basics.FONT_COEFFICIENT, 'fonts/tales_font.ttf', basics.BLACK, bottomright=(basics.WIN_RECT.width - 8 * basics.X_COEFFICIENT, basics.WIN_RECT.height))
+    author_label = Label('Jackselandow Edition', 50 * basics.FONT_COEFFICIENT, 'fonts/tales_font.ttf', 'white', topleft=(0, 5 * basics.Y_COEFFICIENT))
+    play_button = Button(Label('PLAY', 300 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'white', 'red', topleft=(440 * basics.X_COEFFICIENT, 370 * basics.Y_COEFFICIENT)), None, 'arrows', 'white')
+    settings_button = Button(Label('SETTINGS', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', 'white', 'green', topleft=(560 * basics.X_COEFFICIENT, 570 * basics.Y_COEFFICIENT)), None, 'arrows', 'white', feedbacks=[basics.CLICK_SOUND1.play, basics.MENU_MUSIC.stop, run_settings])
+    levels_button = Button(Label('LEVELS', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', 'white', 'blue', topleft=(600 * basics.X_COEFFICIENT, 660 * basics.Y_COEFFICIENT)), None, 'arrows', 'white', feedbacks=[basics.CLICK_SOUND1.play, basics.MENU_MUSIC.stop, run_levels_menu])
+    exit_button = Button(Label('EXIT', 60 * basics.FONT_COEFFICIENT, 'fonts/pixeloid_font.ttf', 'white', 'gray49', topleft=(640 * basics.X_COEFFICIENT, 750 * basics.Y_COEFFICIENT)), None, 'arrows', 'black', feedbacks=[basics.CLICK_SOUND1.play, exit_confirmation])
+    version_label = Label('Version 4.0', 50 * basics.FONT_COEFFICIENT, 'fonts/tales_font.ttf', 'black', bottomright=(basics.WIN_RECT.width - 8 * basics.X_COEFFICIENT, basics.WIN_RECT.height))
     while True:
         basics.CLOCK.tick(basics.FPS)
         menu_bg.show()
@@ -69,9 +69,9 @@ def exit_confirmation():
     transparent_bg.set_alpha(120)
     basics.WIN.blit(transparent_bg, (0, 0))
     confirmation_bg = Image('backgrounds/pause_bg.png', (810 * basics.X_COEFFICIENT, 562.5 * basics.Y_COEFFICIENT), center=(basics.WIN_RECT.right / 2, basics.WIN_RECT.bottom / 2))
-    confirmation_label = Label('Are you sure?', 100 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.WHITE, center=(basics.WIN_RECT.right / 2, 330 * basics.Y_COEFFICIENT))
-    confirm_button = Button(Label('YES', 80 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.RED, topleft=(600 * basics.X_COEFFICIENT, 450 * basics.Y_COEFFICIENT)), None, key=pygame.K_SPACE, feedbacks=[basics.MENU_MUSIC.stop, postview])
-    reject_button = Button(Label('NO', 80 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', basics.GREEN, topleft=(800 * basics.X_COEFFICIENT, 450 * basics.Y_COEFFICIENT)), None, key=pygame.K_ESCAPE)
+    confirmation_label = Label('Are you sure?', 100 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'white', center=(basics.WIN_RECT.right / 2, 330 * basics.Y_COEFFICIENT))
+    confirm_button = Button(Label('YES', 80 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'red', topleft=(600 * basics.X_COEFFICIENT, 450 * basics.Y_COEFFICIENT)), None, key=pygame.K_SPACE, feedbacks=[basics.MENU_MUSIC.stop, postview])
+    reject_button = Button(Label('NO', 80 * basics.FONT_COEFFICIENT, 'fonts/pixeboy_font.ttf', 'green', topleft=(800 * basics.X_COEFFICIENT, 450 * basics.Y_COEFFICIENT)), None, key=pygame.K_ESCAPE)
     while True:
         basics.CLOCK.tick(basics.FPS)
         basics.WIN.blit(transparent_bg, (0, 0))
@@ -87,7 +87,7 @@ def exit_confirmation():
 
 def postview():
     ws_alpha = 0
-    shutdown_list = [pygame.transform.scale(pygame.image.load(f'objects/shutdown/{i}.png'), (basics.WIN_RECT.width, basics.WIN_RECT.height)) for i in range(1, 19)]
+    shutdown_list = [pygame.transform.scale(pygame.image.load(f'objects/shutdown/{i}.png'), (basics.WIN_RECT.width, basics.WIN_RECT.height)).convert() for i in range(1, 19)]
     basics.POWER_DOWN_SOUND.play()
     while ws_alpha < 255:
         ws_alpha += 5
