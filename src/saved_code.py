@@ -1,3 +1,28 @@
+# def detect_start(self, events):
+#     if self.started is True:
+#         self.balls_group.update()
+#         if int(self.number) >= 3:
+#             self.update_buffs()
+#     elif self.started is False:
+#         for event in events:
+#             if event.type == pg.KEYUP and event.key == pygame.K_SPACE:
+#                 self.started = True
+#                 self.music.play(-1)
+#         if self.started is False:
+#             label_alpha = self.press_space_label.text.get_alpha()
+#             if self.label_opacity_timer == 0:
+#                 if label_alpha == 0:
+#                     self.press_space_label.text.set_alpha(255)
+#                 elif label_alpha == 255 or not label_alpha:
+#                     self.press_space_label.text.set_alpha(0)
+#                 self.label_opacity_timer = 30
+#             else:
+#                 self.label_opacity_timer -= 1
+#             self.press_space_label.show()
+#             for ball in self.balls_group:
+#                 ball.hitbox.centerx = self.platform_group.sprite.rect.centerx
+#                 ball.rect.centerx = self.platform_group.sprite.rect.centerx
+
 # class Button:
 #
 #     def __init__(self, label, image, selection='glow', arrows_color=None, clickable=True, key=None, feedbacks=None):

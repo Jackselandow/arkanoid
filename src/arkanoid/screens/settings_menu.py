@@ -21,7 +21,7 @@ def run_main_settings(func_name='run_main_settings'):
         for event in events:
             if event.type == pg.QUIT:
                 pg.mixer.fadeout(850)
-                desired_func = 'quit'
+                desired_func = constants.WIN.copy()
         settings_bg.show()
         main_settings_label.show()
         if output := back_settings_button.update(events, globs, locs): desired_func = output
@@ -33,6 +33,7 @@ def run_main_settings(func_name='run_main_settings'):
                 return desired_func
             else:
                 desired_func = None
+                continue
         pg.display.update()
 
 
@@ -57,7 +58,7 @@ def run_general_settings(func_name='run_general_settings'):
         for event in events:
             if event.type == pg.QUIT:
                 pg.mixer.fadeout(850)
-                desired_func = 'quit'
+                desired_func = constants.WIN.copy()
         settings_bg.show()
         general_settings_label.show()
         control_type_label.show()
@@ -80,6 +81,7 @@ def run_general_settings(func_name='run_general_settings'):
                 return desired_func
             else:
                 desired_func = None
+                continue
         pg.display.update()
 
 
@@ -106,7 +108,7 @@ def run_volume_settings(func_name='run_volume_settings'):
         for event in events:
             if event.type == pg.QUIT:
                 pg.mixer.fadeout(850)
-                desired_func = 'quit'
+                desired_func = constants.WIN.copy()
         general_volume_square_x = 410
         music_volume_square_x = 410
         sound_volume_square_x = 410
@@ -139,6 +141,7 @@ def run_volume_settings(func_name='run_volume_settings'):
                 return desired_func
             else:
                 desired_func = None
+                continue
         pg.display.update()
         constants.SETTINGS_MUSIC.update()
         constants.CLICK_SOUND1.update()
@@ -166,7 +169,7 @@ def run_ball_shape_settings(func_name='run_ball_shape_settings'):
         for event in events:
             if event.type == pg.QUIT:
                 pg.mixer.fadeout(850)
-                desired_func = 'quit'
+                desired_func = constants.WIN.copy()
         settings_bg.show()
         ball_shape_settings_label.show()
         description_label.show()
@@ -185,4 +188,5 @@ def run_ball_shape_settings(func_name='run_ball_shape_settings'):
                 return desired_func
             else:
                 desired_func = None
+                continue
         pg.display.update()

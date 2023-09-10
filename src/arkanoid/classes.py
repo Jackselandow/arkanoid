@@ -281,25 +281,53 @@ class SurfaceMaker:
         self.saved_platform_surfs = {}
         self.darker_shade = pg.Color(40, 40, 40)
 
-    def make_brick_surf(self, size, color):
-        if (color, size) in self.saved_brick_surfs.keys():
-            return self.saved_brick_surfs[(color, size)]
+    def make_brick_surf(self, size, color, armor):
+        if (color, size, armor) in self.saved_brick_surfs.keys():
+            return self.saved_brick_surfs[(color, size, armor)]
         else:
             init_color = pg.color.Color(color)
             dark_color = init_color - self.darker_shade
             darker_color = dark_color - self.darker_shade
             dark_color.a = 255
             darker_color.a = 255
-            surf = pg.Surface(size)
-            surf.set_colorkey((0, 0, 0))
-            surf.fill(darker_color)
-            surf.fill(dark_color, (5 * constants.X_COEFFICIENT, 5 * constants.Y_COEFFICIENT, size[0] - 10 * constants.X_COEFFICIENT, size[1] - 10 * constants.Y_COEFFICIENT))
-            surf.fill(init_color, (10 * constants.X_COEFFICIENT, 10 * constants.Y_COEFFICIENT, size[0] - 20 * constants.X_COEFFICIENT, size[1] - 20 * constants.Y_COEFFICIENT))
-            self.saved_brick_surfs.update({(color, size): surf})
-            return surf
+            new_surf = pg.Surface(size)
+            new_surf.set_colorkey((0, 0, 0))
+            new_surf.fill(darker_color)
+            new_surf.fill(dark_color, (5 * constants.X_COEFFICIENT, 5 * constants.Y_COEFFICIENT, size[0] - 10 * constants.X_COEFFICIENT, size[1] - 10 * constants.Y_COEFFICIENT))
+            new_surf.fill(init_color, (10 * constants.X_COEFFICIENT, 10 * constants.Y_COEFFICIENT, size[0] - 20 * constants.X_COEFFICIENT, size[1] - 20 * constants.Y_COEFFICIENT))
+            if armor > 0:
+                armor_surf = pg.Surface(size)
+                armor_surf.fill('gray49')
+                piece_x, piece_y = 0, 0
+                piece_size = (armor_surf.get_width() - (5 * constants.X_COEFFICIENT * armor)) / (armor + 1), (armor_surf.get_height() - (5 * constants.Y_COEFFICIENT * armor)) / (armor + 1)
+                delta_piece_x, delta_piece_y = piece_size[0] + 5 * constants.X_COEFFICIENT, piece_size[1] + 5 * constants.Y_COEFFICIENT
+                for pos in range((armor + 1) ** 2):
+                    if pos % (armor + 1) == 0 and pos != 0:
+                        piece_x, piece_y = 0, piece_y + delta_piece_y
+                    armor_surf.fill('white', ((piece_x, piece_y), piece_size))
+                    piece_x += delta_piece_x
+                armor_surf.set_colorkey('white')
+                new_surf.blit(armor_surf, (0, 0))
+            self.saved_brick_surfs.update({(color, size, armor): new_surf})
+            return new_surf
 
-    def make_platform_surf(self):
-        pass
+    def make_platform_surf(self, size):
+        if tuple(size) in self.saved_platform_surfs.keys():
+            return self.saved_brick_surfs[size]
+        else:
+            new_surf = pg.Surface(size).convert_alpha()
+            new_surf.set_colorkey((0, 0, 0))
+            left_piece = pg.transform.scale(pg.image.load('arkanoid/resources/graphics/game/platform/left.png'), (size[1] * (6 / 5), size[1])).convert_alpha()
+            core_piece = pg.transform.scale(pg.image.load('arkanoid/resources/graphics/game/platform/core.png'), (size[1] * (4 / 5), size[1])).convert_alpha()
+            right_piece = pg.transform.scale(pg.image.load('arkanoid/resources/graphics/game/platform/right.png'), (size[1] * (6 / 5), size[1])).convert_alpha()
+            body_piece = pg.transform.scale(pg.image.load('arkanoid/resources/graphics/game/platform/body.png'), ((size[0] - left_piece.get_width() - core_piece.get_width() - right_piece.get_width()) / 2, size[1])).convert_alpha()
+            new_surf.blit(left_piece, (0, 0))
+            new_surf.blit(body_piece, (left_piece.get_width(), 0))
+            new_surf.blit(core_piece, (left_piece.get_width() + body_piece.get_width(), 0))
+            new_surf.blit(body_piece, (left_piece.get_width() + body_piece.get_width() + core_piece.get_width(), 0))
+            new_surf.blit(right_piece, (left_piece.get_width() + body_piece.get_width() * 2 + core_piece.get_width(), 0))
+            self.saved_brick_surfs.update({tuple(size): new_surf})
+            return new_surf
 
 
 class Border(pg.sprite.Sprite):
@@ -326,7 +354,7 @@ class Brick(pg.sprite.Sprite):
         else:
             self.armor = armor
         self.image = pg.Surface(self.size).convert()
-        self.alter_appearance()
+        self.update_appearance()
         self.rect = pg.Rect(self.x, self.y, self.size[0], self.size[1])
         self.mask = pg.mask.from_surface(self.image)
         self.content = choice([None, None, None, 'buff'])
@@ -340,7 +368,7 @@ class Brick(pg.sprite.Sprite):
             self.armor -= 1
             if self.armor >= 0:
                 constants.DAMAGE_SOUND.stop_play()
-                self.alter_appearance()
+                self.update_appearance()
             else:
                 constants.EXPLOSION_SOUND.stop_play()
                 self.kill()
@@ -348,8 +376,8 @@ class Brick(pg.sprite.Sprite):
                     if buff.brick_holder == self and buff.state == 'passive':
                         buff.state = 'fall'
 
-    def alter_appearance(self):
-        self.image = constants.SURFACEMAKER.make_brick_surf(self.size, self.color)
+    def update_appearance(self):
+        self.image = constants.SURFACEMAKER.make_brick_surf(self.size, self.color, self.armor)
 
         # brick_filling = pg.image.load(f'objects/bricks/{self.color}.png').convert()
         # self.image.fill('black')
@@ -370,11 +398,14 @@ class Brick(pg.sprite.Sprite):
 
 class Platform(pg.sprite.Sprite):
 
-    def __init__(self, level, pos, size, surf, vel):
+    def __init__(self, level, pos, size, vel):
         super().__init__()
+        self.level = level
         self.x, self.y = pos
         self.size = size
-        self.image = pg.transform.scale(pg.image.load(surf), size).convert_alpha()
+        self.desired_size = size.copy() # is needed for buffs 'wide_platform' and 'narrow_platform' handling
+        self.width_scaler = None # is a piece of the difference between size and desire_size which gradually scales width to the desired one
+        self.image = constants.SURFACEMAKER.make_platform_surf(self.size)
         self.rect = pg.Rect(self.x, self.y, self.size[0], self.size[1])
         self.mask = pg.mask.from_surface(self.image)
         self.vel = vel
@@ -382,15 +413,13 @@ class Platform(pg.sprite.Sprite):
     def update(self):
         if constants.CONTROL_TYPE == 'keyboard':
             key_pressed = pg.key.get_pressed()
-            if key_pressed[pg.K_LEFT] and not self.rect.colliderect(constants.LEFT_BORDER.rect) or key_pressed[pg.K_a] and not self.rect.colliderect(constants.LEFT_BORDER.rect):
+            if key_pressed[pg.K_LEFT] or key_pressed[pg.K_a]:
                 self.rect.x -= self.vel * constants.X_COEFFICIENT
-            if key_pressed[pg.K_RIGHT] and not self.rect.colliderect(constants.RIGHT_BORDER.rect) or key_pressed[pg.K_d] and not self.rect.colliderect(constants.RIGHT_BORDER.rect):
+            if key_pressed[pg.K_RIGHT] or key_pressed[pg.K_d]:
                 self.rect.x += self.vel * constants.X_COEFFICIENT
         elif constants.CONTROL_TYPE == 'mouse':
             mouse_pos = pg.mouse.get_pos()
-            left_center = self.rect.centerx - self.rect.left
-            right_center = self.rect.right - self.rect.centerx
-            if not self.rect.colliderect(constants.LEFT_BORDER.rect) and not self.rect.colliderect(constants.RIGHT_BORDER.rect):
+            if not self.rect.colliderect(self.level.left_border.rect) and not self.rect.colliderect(self.level.right_border.rect):
                 if not -self.vel * constants.X_COEFFICIENT < mouse_pos[0] - self.rect.centerx < self.vel * constants.X_COEFFICIENT:
                     if mouse_pos[0] >= self.rect.centerx:
                         self.rect.centerx += self.vel * constants.X_COEFFICIENT
@@ -398,12 +427,20 @@ class Platform(pg.sprite.Sprite):
                         self.rect.centerx -= self.vel * constants.X_COEFFICIENT
                 else:
                     self.rect.centerx = mouse_pos[0]
-            elif left_center < mouse_pos[0] < constants.RIGHT_BORDER.x - right_center:
-                if mouse_pos[0] > self.rect.centerx:
-                    self.rect.centerx += self.vel * constants.X_COEFFICIENT
-                elif mouse_pos[0] < self.rect.centerx:
-                    self.rect.centerx -= self.vel * constants.X_COEFFICIENT
-        # pg.draw.rect(constants.WIN, constants.WHITE, self.rect) # draw a rectangle (hitbox) on the screen for tests
+        if self.rect.left < self.level.left_border.rect.right: # checks if the platform is located within the bounds and teleports it to the closest border (left or right) if the previous condition is false
+            self.rect.left = self.level.left_border.rect.right
+        elif self.rect.right > self.level.right_border.rect.left:
+            self.rect.right = self.level.right_border.rect.left
+        # hitbox = (pg.Surface(self.rect.size)).convert_alpha()
+        # hitbox.fill((255, 255, 255, 125))
+        # constants.WIN.blit(hitbox, self.rect) # draw a rectangle (hitbox) on the screen for tests
+
+    def update_appearance(self):
+        rect_center = self.rect.center
+        self.rect = pg.Rect((0, 0), self.size)
+        self.rect.center = rect_center
+        self.image = constants.SURFACEMAKER.make_platform_surf(self.size)
+        self.mask = pg.mask.from_surface(self.image)
 
 
 class Ball(pg.sprite.Sprite):
@@ -448,7 +485,9 @@ class Ball(pg.sprite.Sprite):
         self.hitbox.y += self.vel * self.y_move * constants.Y_COEFFICIENT
         self.rect.center = self.hitbox.center
         # print(f'old_rect: ({self.old_rect.x, self.old_rect.y}), rect: ({self.rect.x, self.rect.y})')
-        # pg.draw.rect(constants.WIN, constants.RED, self.hitbox) # draw a rectangle (hitbox) on the screen for tests
+        # hitbox_surf = (pg.Surface(self.hitbox.size)).convert_alpha()
+        # hitbox_surf.fill((255, 0, 0, 125))
+        # constants.WIN.blit(hitbox_surf, self.hitbox)  # draw a rectangle (hitbox) on the screen for tests
 
         # ball animation
         if constants.SHAPE_ANIMATION and self.level.started is True:
@@ -503,34 +542,34 @@ class Ball(pg.sprite.Sprite):
 
     def detect_platform_collision(self):
         # if self.hitbox.colliderect(constants.LEVEL.platform_group.sprite.rect) and self.y_move > 0:
-        if self.hitbox.colliderect(self.level.platform_group.sprite.rect):
+        if self.hitbox.colliderect(self.level.platform.rect):
             if len(self.collision_info_storage['platform']) == 0:
-                self.collision_info_storage['platform'] = {'platform_rect': self.level.platform_group.sprite.rect, 'hitbox': self.hitbox, 'old_hitbox': self.old_hitbox, 'x_move': self.x_move, 'y_move': self.y_move} # adds the necessary info of collision to the storage
+                self.collision_info_storage['platform'] = {'platform_rect': self.level.platform.rect, 'hitbox': self.hitbox, 'old_hitbox': self.old_hitbox, 'x_move': self.x_move, 'y_move': self.y_move} # adds the necessary info of collision to the storage
             if pg.sprite.spritecollideany(self, self.level.platform_group, pg.sprite.collide_mask):
                 constants.BOUNCE_SOUND.stop_play()
                 collision_info = self.collision_info_storage['platform']
                 platform_rect, hitbox, old_hitbox, x_move, y_move = collision_info['platform_rect'], collision_info['hitbox'], collision_info['old_hitbox'], collision_info['x_move'], collision_info['y_move']
                 if x_move > 0 and old_hitbox.right <= platform_rect.left <= hitbox.right:  # check collision between the right side of the ball and the left side of the platform
                     self.x_move = -abs(self.x_move)
-                    self.hitbox.right = self.level.platform_group.sprite.rect.left
+                    self.hitbox.right = self.level.platform.rect.left
                 elif x_move < 0 and hitbox.left <= platform_rect.right <= old_hitbox.left:  # check collision between the left side of the ball and the right side of the platform
                     self.x_move = abs(self.x_move)
-                    self.hitbox.left = self.level.platform_group.sprite.rect.right
+                    self.hitbox.left = self.level.platform.rect.right
                 if y_move > 0 and old_hitbox.bottom <= platform_rect.top <= hitbox.bottom:  # check collision between the bottom side of the ball and the top side of the platform
                     if 'chaotic_ball' not in self.level.active_buffs_types:
-                        loc = self.hitbox.centerx - self.level.platform_group.sprite.rect.centerx # location of the ball center relatively to platform center
+                        loc = self.hitbox.centerx - self.level.platform.rect.centerx # location of the ball center relatively to platform center
                         max_move = 0.9
                         super_max_move = 0.95
-                        new_move = (2 * max_move * loc) / self.level.platform_group.sprite.rect.width
+                        new_move = (2 * max_move * loc) / self.level.platform.rect.width
                         if new_move < -max_move:
-                            new_move = -(max_move + ((2 * (super_max_move - max_move) * (self.level.platform_group.sprite.rect.left - self.hitbox.centerx)) / self.hitbox.width))
+                            new_move = -(max_move + ((2 * (super_max_move - max_move) * (self.level.platform.rect.left - self.hitbox.centerx)) / self.hitbox.width))
                         elif new_move > max_move:
-                            new_move = max_move + ((2 * (super_max_move - max_move) * (self.hitbox.centerx - self.level.platform_group.sprite.rect.right)) / self.hitbox.width)
+                            new_move = max_move + ((2 * (super_max_move - max_move) * (self.hitbox.centerx - self.level.platform.rect.right)) / self.hitbox.width)
                         self.x_move = new_move
                     else:
                         self.x_move = randint(0, 95) / 100
                     self.y_move = -sqrt(1 - self.x_move ** 2)
-                    self.hitbox.bottom = self.level.platform_group.sprite.rect.top
+                    self.hitbox.bottom = self.level.platform.rect.top
                 # elif y_move < 0 and hitbox.top <= platform_rect.bottom <= old_hitbox.top:  # check collision between the top side of the ball and the bottom side of the platform
                 #     self.y_move = abs(self.y_move)
                 #     self.hitbox.top = constants.LEVEL.platform_group.sprite.rect.bottom
@@ -548,16 +587,20 @@ class Ball(pg.sprite.Sprite):
                 #         self.x_move = abs(self.x_move)
 
     def detect_border_collision(self):
-        if self.rect.top > constants.BOTTOM_BORDER.rect.bottom:
-            self.kill()
-        elif pg.sprite.spritecollideany(self, self.level.borders_group):
-            if self.y_move < 0 and pg.sprite.collide_mask(self, constants.TOP_BORDER) is not None:
+        # if self.rect.top > self.level.bottom_border.rect.bottom:
+        #     self.kill()
+        # elif pg.sprite.spritecollideany(self, self.level.borders_group):
+        if pg.sprite.spritecollideany(self, self.level.borders_group):
+            if self.y_move < 0 and pg.sprite.collide_mask(self, self.level.top_border) is not None:
                 constants.BOUNCE_SOUND.stop_play()
                 self.y_move = abs(self.y_move)
-            if self.x_move < 0 and pg.sprite.collide_mask(self, constants.LEFT_BORDER) is not None:
+            if self.y_move > 0 and pg.sprite.collide_mask(self, self.level.bottom_border) is not None:
+                constants.BOUNCE_SOUND.stop_play()
+                self.y_move = -abs(self.y_move)
+            if self.x_move < 0 and pg.sprite.collide_mask(self, self.level.left_border) is not None:
                 constants.BOUNCE_SOUND.stop_play()
                 self.x_move = abs(self.x_move)
-            if self.x_move > 0 and pg.sprite.collide_mask(self, constants.RIGHT_BORDER) is not None:
+            if self.x_move > 0 and pg.sprite.collide_mask(self, self.level.right_border) is not None:
                 constants.BOUNCE_SOUND.stop_play()
                 self.x_move = -abs(self.x_move)
 
@@ -627,7 +670,7 @@ class Buff(pg.sprite.Sprite):
         self.level = level
         self.level.passive_buffs_group.add(self)
         self.state = 'passive'
-        self.type = choice(['slow_ball', 'fast_ball', 'slow_platform', 'fast_platform', 'more_balls', 'chaotic_ball', 'x-ray', 'ghost_ball'])
+        self.type = choice(['slow_ball', 'fast_ball', 'narrow_platform', 'wide_platform', 'more_balls', 'chaotic_ball', 'x-ray', 'ghost_ball'])
         self.brick_holder = brick_holder
         self.size = 40 * constants.X_COEFFICIENT, 40 * constants.Y_COEFFICIENT
         self.image = pg.transform.scale(pg.image.load(f'arkanoid/resources/graphics/game/buffs/{self.type}.png'), self.size).convert_alpha()
@@ -636,14 +679,14 @@ class Buff(pg.sprite.Sprite):
 
     def update(self): # detect buff state
         if self.state == 'fall':
-            if self.rect.colliderect(self.level.platform_group.sprite.rect):
+            if self.rect.colliderect(self.level.platform.rect):
                 constants.BUFF_SOUND.stop_play()
                 self.state = 'active'
                 self.level.passive_buffs_group.remove(self)
                 self.level.active_buffs_group.add(self)
                 self.level.active_buffs_types.append(self.type)
                 self.apply_buff()
-            elif self.rect.top > constants.BOTTOM_BORDER.rect.bottom:
+            elif self.rect.top > self.level.bottom_border.rect.bottom:
                 self.kill()
             else:
                 self.rect.y += 5 * constants.Y_COEFFICIENT
@@ -656,14 +699,28 @@ class Buff(pg.sprite.Sprite):
         elif self.type == 'fast_ball':
             for ball in self.level.balls_group:
                 ball.vel *= 1.25
-        elif self.type == 'slow_platform':
-            self.level.platform_group.sprite.vel *= 0.75
-        elif self.type == 'fast_platform':
-            self.level.platform_group.sprite.vel *= 1.25
+        elif self.type == 'narrow_platform':
+            if self.level.platform.size[0] > 136 * constants.X_COEFFICIENT: # 95 pixels is a minimum platform width
+                self.level.platform.desired_size[0] *= 0.7
+                width_diff = self.level.platform.desired_size[0] - self.level.platform.size[0]
+                self.level.platform.width_scaler = width_diff / 30
+                self.timer = Timer(10, self.cancel_buff)
+            else:
+                self.kill()
+                self.level.active_buffs_types.remove(self.type)
+        elif self.type == 'wide_platform':
+            if self.level.platform.size[0] < 1107 * constants.X_COEFFICIENT:  # 1440 pixels is a maximum platform width
+                self.level.platform.desired_size[0] *= 1.3
+                width_diff = self.level.platform.desired_size[0] - self.level.platform.size[0]
+                self.level.platform.width_scaler = width_diff / 30
+                self.timer = Timer(10, self.cancel_buff)
+            else:
+                self.kill()
+                self.level.active_buffs_types.remove(self.type)
         elif self.type == 'more_balls':
             first_ball = self.level.balls_group.sprites()[0]
-            self.level.balls_group.add(Ball(self.level, (self.level.platform_group.sprite.rect.centerx - (first_ball.init_size[0] / 2), first_ball.y), first_ball.init_size, first_ball.shape, first_ball.vel))
-            self.level.balls_group.add(Ball(self.level, (self.level.platform_group.sprite.rect.centerx - (first_ball.init_size[0] / 2), first_ball.y), first_ball.init_size, first_ball.shape, first_ball.vel))
+            self.level.balls_group.add(Ball(self.level, (self.level.platform.rect.centerx - (first_ball.init_size[0] / 2), first_ball.y), first_ball.init_size, first_ball.shape, first_ball.vel))
+            self.level.balls_group.add(Ball(self.level, (self.level.platform.rect.centerx - (first_ball.init_size[0] / 2), first_ball.y), first_ball.init_size, first_ball.shape, first_ball.vel))
             self.timer = None
         elif self.type == 'chaotic_ball':
             self.timer = Timer(20, self.cancel_buff)
@@ -679,14 +736,18 @@ class Buff(pg.sprite.Sprite):
         self.level.active_buffs_types.remove(self.type)
         if self.type == 'slow_ball':
             for ball in self.level.balls_group:
-                ball.vel *= 1.25
+                ball.vel /= 0.75
         elif self.type == 'fast_ball':
             for ball in self.level.balls_group:
-                ball.vel *= 0.75
-        elif self.type == 'slow_platform':
-            self.level.platform_group.sprite.vel *= 1.25
-        elif self.type == 'fast_platform':
-            self.level.platform_group.sprite.vel *= 0.75
+                ball.vel /= 1.25
+        elif self.type == 'narrow_platform':
+            self.level.platform.desired_size[0] /= 0.7
+            width_diff = self.level.platform.desired_size[0] - self.level.platform.size[0]
+            self.level.platform.width_scaler = width_diff / 30
+        elif self.type == 'wide_platform':
+            self.level.platform.desired_size[0] /= 1.3
+            width_diff = self.level.platform.desired_size[0] - self.level.platform.size[0]
+            self.level.platform.width_scaler = width_diff / 30
         elif self.type == 'ghost_ball':
             for ball in self.level.balls_group:
                 ball.alpha = 255

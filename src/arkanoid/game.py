@@ -1,7 +1,7 @@
 import pygame
 import pygame as pg
 from arkanoid import constants
-from arkanoid.classes import Label, Image, Button, Brick, Platform, Ball
+from arkanoid.classes import Label, Image, Button, Border, Brick, Platform, Ball
 from arkanoid.progress import update_game_progress
 pg.init()
 
@@ -17,8 +17,13 @@ class Level:
         self.pause_button = Button(Image('arkanoid/resources/graphics/game/pause_button.png', (100 * constants.X_COEFFICIENT, 100 * constants.Y_COEFFICIENT), topleft=(8 * constants.X_COEFFICIENT, 8 * constants.Y_COEFFICIENT)), 'glow', key=pg.K_ESCAPE, feedback='last_frame = constants.WIN.copy()\ndesired_func = self.run_pause(last_frame)\noutput = desired_func')
         self.bg = Image(f'arkanoid/resources/graphics/backgrounds/lvl{self.number}.png', (constants.WIN_RECT.right, constants.WIN_RECT.bottom - self.upper_menu.height), topleft=(0, self.upper_menu.bottom))
         self.music = eval(f'constants.LVL{self.number}_MUSIC')
-        self.borders_group = pg.sprite.Group(constants.TOP_BORDER, constants.LEFT_BORDER, constants.RIGHT_BORDER, constants.BOTTOM_BORDER)
-        self.platform_group = pg.sprite.GroupSingle(Platform(self, (620 * constants.X_COEFFICIENT, 720 * constants.Y_COEFFICIENT), (200 * constants.X_COEFFICIENT, 30 * constants.Y_COEFFICIENT), 'arkanoid/resources/graphics/game/platform.png', 8))
+        self.left_border = Border((-1, 115 * constants.Y_COEFFICIENT), (1, constants.WIN_RECT.height))
+        self.right_border = Border((constants.WIN_RECT.right, 115 * constants.Y_COEFFICIENT), (1, constants.WIN_RECT.height))
+        self.top_border = Border((0, 115 * constants.Y_COEFFICIENT), (constants.WIN_RECT.width, 1))
+        self.bottom_border = Border(constants.WIN_RECT.bottomleft, (constants.WIN_RECT.width, 1))
+        self.borders_group = pg.sprite.Group(self.left_border, self.right_border, self.top_border, self.bottom_border)
+        self.platform = Platform(self, (620 * constants.X_COEFFICIENT, 720 * constants.Y_COEFFICIENT), [200 * constants.X_COEFFICIENT, 30 * constants.Y_COEFFICIENT], 8)
+        self.platform_group = pg.sprite.GroupSingle(self.platform)
         self.balls_group = pg.sprite.Group(Ball(self, (695 * constants.X_COEFFICIENT, 670 * constants.Y_COEFFICIENT), (50 * constants.X_COEFFICIENT, 50 * constants.Y_COEFFICIENT), constants.CURRENT_SHAPE, 8))
         self.bricks_group = pg.sprite.Group()
         self.gray_bricks_number = 0
@@ -113,7 +118,7 @@ class Level:
                     brick_color = 'gray'
                     self.gray_bricks_number += 1
                 if brick_color != 'none':
-                    self.bricks_group.add(Brick(self, (brick_x, brick_y), brick_size, brick_color, armor=2))
+                    self.bricks_group.add(Brick(self, (brick_x, brick_y), brick_size, brick_color, armor=3))
                 brick_x += delta_brick_x
 
     def play(self, func_name='play'):
@@ -129,7 +134,10 @@ class Level:
             for event in events:
                 if event.type == pg.QUIT:
                     pg.mixer.fadeout(850)
-                    desired_func = 'quit'
+                    desired_func = constants.WIN.copy()
+                elif event.type == pg.KEYUP and event.key == pygame.K_SPACE and self.started is False:
+                    self.started = True
+                    self.music.play(-1)
             if bricks_left_number == 0:
                 self.music.stop()
                 desired_func = self.run_victory()
@@ -141,30 +149,13 @@ class Level:
             constants.WIN.fill('black', self.upper_menu)
             lvl_name_label.show()
             bricks_left_label.show()
-            self.platform_group.draw(constants.WIN)
-            self.platform_group.update()
-            self.balls_group.draw(constants.WIN)
             self.bricks_group.draw(constants.WIN)
-            self.detect_start(events)
-            if output := self.pause_button.update(events, globs, locs): desired_func = output
-            if desired_func:
-                if func_name != desired_func:
-                    return desired_func
-                else:
-                    desired_func = None
-            pg.display.update()
-
-    def detect_start(self, events):
-        if self.started is True:
-            self.balls_group.update()
             if int(self.number) >= 3:
                 self.update_buffs()
-        elif self.started is False:
-            for event in events:
-                if event.type == pg.KEYUP and event.key == pygame.K_SPACE:
-                    self.started = True
-                    self.music.play(-1)
-            if self.started is False:
+            self.platform_group.update()
+            if self.started is True:
+                self.balls_group.update()
+            elif self.started is False:
                 label_alpha = self.press_space_label.text.get_alpha()
                 if self.label_opacity_timer == 0:
                     if label_alpha == 0:
@@ -176,11 +167,28 @@ class Level:
                     self.label_opacity_timer -= 1
                 self.press_space_label.show()
                 for ball in self.balls_group:
-                    ball.hitbox.centerx = self.platform_group.sprite.rect.centerx
-                    ball.rect.centerx = self.platform_group.sprite.rect.centerx
+                    ball.hitbox.centerx = self.platform.rect.centerx
+                    ball.rect.centerx = self.platform.rect.centerx
+            self.platform_group.draw(constants.WIN)
+            self.balls_group.draw(constants.WIN)
+            if output := self.pause_button.update(events, globs, locs): desired_func = output
+            if desired_func:
+                if func_name != desired_func:
+                    return desired_func
+                else:
+                    desired_func = None
+                    continue
+            pg.display.update()
 
     def update_buffs(self):
         self.passive_buffs_group.update()
+        if self.platform.width_scaler: # checks if the platform has fulfilled the 'narrow_platform' and 'wide_platform' buffs' effect
+            if abs(self.platform.size[0] - self.platform.desired_size[0]) < 1 * constants.X_COEFFICIENT:
+                self.platform.size[0] = self.platform.desired_size[0]
+                self.platform.width_scaler = None
+            else:
+                self.platform.size[0] += self.platform.width_scaler
+            self.platform.update_appearance()
         if 'x-ray' in self.active_buffs_types:
             self.passive_buffs_group.draw(constants.WIN)
         if 'ghost_ball' in self.active_buffs_types:
@@ -219,7 +227,7 @@ class Level:
             for event in events:
                 if event.type == pg.QUIT:
                     pg.mixer.fadeout(850)
-                    desired_func = 'quit'
+                    desired_func = constants.WIN.copy()
             pause_bg.show()
             pause_label.show()
             if output := restart_button.update(events, globs, locs): desired_func = output
@@ -234,6 +242,7 @@ class Level:
                     return desired_func
                 else:
                     desired_func = None
+                    continue
             pg.display.update()
 
     def run_countdown(self, last_frame):
@@ -265,10 +274,10 @@ class Level:
                 buff.timer.cancel()
         self.active_buffs_group.empty()
         if self.number not in constants.PASSED_LEVELS:
+            update_game_progress(self.number)
             passed = True
         else:
             passed = False
-        update_game_progress(self.number)
         constants.VICTORY_SOUND.play()
 
         cup = pg.transform.scale(pg.image.load('arkanoid/resources/graphics/game/cup.png'), (200 * constants.X_COEFFICIENT, 200 * constants.Y_COEFFICIENT)).convert()
@@ -285,7 +294,7 @@ class Level:
             for event in events:
                 if event.type == pg.QUIT:
                     pg.mixer.fadeout(850)
-                    desired_func = 'quit'
+                    desired_func = constants.WIN.copy()
             constants.WIN.fill('black')
             constants.WIN.blit(cup, (220 * constants.X_COEFFICIENT, 110 * constants.Y_COEFFICIENT))
             constants.WIN.blit(cup, (1010 * constants.X_COEFFICIENT, 110 * constants.Y_COEFFICIENT))
@@ -302,6 +311,7 @@ class Level:
                     return desired_func
                 else:
                     desired_func = None
+                    continue
             pg.display.update()
 
     def run_defeat(self, func_name='run_defeat'):
@@ -323,7 +333,7 @@ class Level:
             for event in events:
                 if event.type == pg.QUIT:
                     pg.mixer.fadeout(850)
-                    desired_func = 'quit'
+                    desired_func = constants.WIN.copy()
             constants.WIN.fill('black')
             constants.WIN.blit(game_over, (400 * constants.X_COEFFICIENT, 50 * constants.Y_COEFFICIENT))
             if output := retry_button.update(events, globs, locs): desired_func = output
@@ -333,5 +343,6 @@ class Level:
                     return desired_func
                 else:
                     desired_func = None
+                    continue
             pg.display.update()
 

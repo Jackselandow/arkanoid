@@ -15,7 +15,7 @@ def run_main_menu(alpha, func_name='run_main_menu'):
     play_button = Button(Label('PLAY', 300 * constants.FONT_COEFFICIENT, 'pixeboy', 'white', 'red', topleft=(440 * constants.X_COEFFICIENT, 370 * constants.Y_COEFFICIENT)), 'white_arrows', click_sound='start', feedback='constants.MENU_MUSIC.stop()\nif len(constants.PASSED_LEVELS_LIST) != 0 and int(constants.PASSED_LEVELS_LIST[-1]) == constants.MAX_LEVEL:\n number = constants.PASSED_LEVELS_LIST[-1]\nelse:\n number = str(len(constants.PASSED_LEVELS_LIST) + 1)\ndesired_func = Level(number).play()\noutput = desired_func')
     settings_button = Button(Label('SETTINGS', 60 * constants.FONT_COEFFICIENT, 'pixeloid', 'white', 'green', topleft=(560 * constants.X_COEFFICIENT, 570 * constants.Y_COEFFICIENT)), 'white_arrows', feedback='constants.MENU_MUSIC.stop()\ndesired_func = run_main_settings()\noutput = desired_func')
     levels_button = Button(Label('LEVELS', 60 * constants.FONT_COEFFICIENT, 'pixeloid', 'white', 'blue', topleft=(600 * constants.X_COEFFICIENT, 660 * constants.Y_COEFFICIENT)), 'white_arrows', feedback='constants.MENU_MUSIC.stop()\ndesired_func = run_levels_menu()\noutput = desired_func')
-    exit_button = Button(Label('EXIT', 60 * constants.FONT_COEFFICIENT, 'pixeloid', 'white', 'gray49', topleft=(640 * constants.X_COEFFICIENT, 750 * constants.Y_COEFFICIENT)), 'gray_arrows', feedback='pg.mixer.fadeout(850)\ndesired_func = "quit"\noutput = desired_func')
+    exit_button = Button(Label('EXIT', 60 * constants.FONT_COEFFICIENT, 'pixeloid', 'white', 'gray49', topleft=(640 * constants.X_COEFFICIENT, 750 * constants.Y_COEFFICIENT)), 'gray_arrows', feedback='pg.mixer.fadeout(850)\ndesired_func = constants.WIN.copy()\noutput = desired_func')
     version_label = Label('Version 4.0', 50 * constants.FONT_COEFFICIENT, 'tales', 'black', bottomright=(constants.WIN_RECT.width - 8 * constants.X_COEFFICIENT, constants.WIN_RECT.height))
     while True:
         constants.CLOCK.tick(constants.FPS)
@@ -25,7 +25,7 @@ def run_main_menu(alpha, func_name='run_main_menu'):
         for event in events:
             if event.type == pg.QUIT:
                 pg.mixer.fadeout(850)
-                desired_func = 'quit'
+                desired_func = constants.WIN.copy()
         menu_bg.show()
         arkanoid_logo.show()
         author_label.show()
@@ -44,6 +44,7 @@ def run_main_menu(alpha, func_name='run_main_menu'):
             else:
                 desired_func = None
                 constants.MENU_MUSIC.play(-1)
+                continue
         pg.display.update()
 
 

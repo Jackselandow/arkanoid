@@ -33,11 +33,6 @@ SURFACEMAKER = SurfaceMaker()
 # TOP_BORDER = pg.Rect(0, 115 * Y_COEFFICIENT, WIN_RECT.right, 1)
 # BOTTOM_BORDER = pg.Rect(0, WIN_RECT.bottom, WIN_RECT.right, 1)
 
-LEFT_BORDER = Border((-1, 115 * Y_COEFFICIENT), (1, WIN_RECT.height))
-RIGHT_BORDER = Border((WIN_RECT.right, 115 * Y_COEFFICIENT), (1, WIN_RECT.height))
-TOP_BORDER = Border((0, 115 * Y_COEFFICIENT), (WIN_RECT.width, 1))
-BOTTOM_BORDER = Border(WIN_RECT.bottomleft, (WIN_RECT.width, 1))
-
 BLACK_SCREEN = pg.Surface((WIN_RECT.width, WIN_RECT.height)).convert()
 BLACK_SCREEN.fill((0, 0, 0))
 WHITE_SCREEN = pg.Surface((WIN_RECT.width, WIN_RECT.height)).convert()
